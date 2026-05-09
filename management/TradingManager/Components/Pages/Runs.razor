@@ -1,0 +1,101 @@
+@page "/runs"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Run History</PageTitle>
+
+<h1>Run History</h1>
+
+<div class="mb-3">
+    <button class="btn btn-outline-secondary btn-sm" @onclick="LoadRuns">↻ Refresh</button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert alert-secondary">@_message</div>
+}
+
+@if (_runs.Count == 0)
+{
+    <p class="text-muted">Keine gespeicherten Runs.</p>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var run in _runs)
+        {
+            <button class="list-group-item list-group-item-action" @onclick="@(() => OpenRun(run.JobId))">
+                <div class="d-flex justify-content-between">
+                    <strong>@run.JobId</strong>
+                    <span>@(run.UpdatedAt ?? "-")</span>
+                </div>
+                <div class="small text-muted">
+                    @run.Ticker | @run.AnalysisDate | @run.Status (@run.Progress%) | @run.ModelId
+                    @if (run.ContextLength.HasValue || run.MaxConcurrent.HasValue)
+                    {
+                        <span> | ctx: @run.ContextLength | experts: @run.MaxConcurrent</span>
+                    }
+                </div>
+            </button>
+        }
+    </div>
+}
+
+@code {
+    private readonly List<RunSummary> _runs = [];
+    private string? _message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRuns();
+    }
+
+    private HttpClient NewClient()
+    {
+        var client = HttpClientFactory.CreateClient();
+        client.BaseAddress = new Uri(Navigation.BaseUri);
+        return client;
+    }
+
+    private async Task LoadRuns()
+    {
+        try
+        {
+            using var client = NewClient();
+            var data = await client.GetFromJsonAsync<RunListResponse>("api/manager/runs?limit=200");
+            _runs.Clear();
+            if (data?.Runs is { Count: > 0 })
+            {
+                _runs.AddRange(data.Runs);
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+        }
+    }
+
+    private void OpenRun(string jobId) => Navigation.NavigateTo($"/runs/{jobId}");
+
+    private sealed class RunListResponse
+    {
+        public List<RunSummary> Runs { get; set; } = [];
+    }
+
+    private sealed class RunSummary
+    {
+        public string JobId { get; set; } = string.Empty;
+        public string? Ticker { get; set; }
+        public string? AnalysisDate { get; set; }
+        public string? Status { get; set; }
+        public int Progress { get; set; }
+        public string? Provider { get; set; }
+        public string? ModelId { get; set; }
+        public int? ContextLength { get; set; }
+        public int? MaxConcurrent { get; set; }
+        public string? UpdatedAt { get; set; }
+    }
+}
+

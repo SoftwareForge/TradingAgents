@@ -39,6 +39,7 @@ PROVIDER_DEFAULTS = {
     "qwen": ("qwen-plus", None),
     "glm": ("glm-5", None),
     "xai": ("grok-4", None),
+    "lmstudio": ("qwen3:latest", "http://127.0.0.1:1234/v1"),
 }
 
 
@@ -120,8 +121,17 @@ def main() -> int:
     print(f"Quick model: {quick_model}")
 
     # Build the LLM clients via the framework's factory.
-    deep_client = create_llm_client(provider=args.provider, model=deep_model)
-    quick_client = create_llm_client(provider=args.provider, model=quick_model)
+    _, default_base_url = PROVIDER_DEFAULTS[args.provider]
+    deep_client = create_llm_client(
+        provider=args.provider,
+        model=deep_model,
+        base_url=default_base_url,
+    )
+    quick_client = create_llm_client(
+        provider=args.provider,
+        model=quick_model,
+        base_url=default_base_url,
+    )
     deep_llm = deep_client.get_llm()
     quick_llm = quick_client.get_llm()
 

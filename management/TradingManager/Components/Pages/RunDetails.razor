@@ -1,0 +1,153 @@
+@page "/runs/{JobId}"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Run Details</PageTitle>
+
+<h1>Run Details</h1>
+<p><strong>Job ID:</strong> @JobId</p>
+
+<div class="mb-3">
+    <button class="btn btn-outline-secondary btn-sm me-2" @onclick="LoadRun">↻ Refresh</button>
+    <button class="btn btn-outline-primary btn-sm" @onclick="@(() => Navigation.NavigateTo("/runs"))">Back to Runs</button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert alert-secondary">@_message</div>
+}
+
+@if (_run is null)
+{
+    <p class="text-muted">Kein Datensatz gefunden.</p>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Meta</h5>
+            <p class="mb-1"><strong>Ticker:</strong> @_run.Ticker</p>
+            <p class="mb-1"><strong>Date:</strong> @_run.AnalysisDate</p>
+            <p class="mb-1"><strong>Status:</strong> @_run.Status (@_run.Progress%)</p>
+            <p class="mb-1"><strong>Model:</strong> @_run.ModelId</p>
+            <p class="mb-1"><strong>Context Length:</strong> @(_run.ContextLength?.ToString() ?? "-")</p>
+            <p class="mb-1"><strong>Max Concurrent:</strong> @(_run.MaxConcurrent?.ToString() ?? "-")</p>
+            <p class="mb-0"><strong>Provider:</strong> @_run.Provider</p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Summary</h5>
+            <pre class="p-2 bg-light border">@(_run.Summary ?? "-")</pre>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Metrics</h5>
+            @if (_run.Metrics.Count == 0)
+            {
+                <p class="text-muted mb-0">Keine Metrics gespeichert.</p>
+            }
+            else
+            {
+                <ul class="mb-0">
+                    @foreach (var m in _run.Metrics.OrderBy(x => x.Key))
+                    {
+                        <li><strong>@m.Key:</strong> @m.Value</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Signals</h5>
+            @if (_run.Signals.Count == 0)
+            {
+                <p class="text-muted mb-0">Keine Signals gespeichert.</p>
+            }
+            else
+            {
+                <ul class="mb-0">
+                    @foreach (var s in _run.Signals.Take(30))
+                    {
+                        <li><strong>@s.Signal</strong> - @s.Source</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string JobId { get; set; } = string.Empty;
+
+    private RunSnapshotDto? _run;
+    private string? _message;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadRun();
+    }
+
+    private HttpClient NewClient()
+    {
+        var client = HttpClientFactory.CreateClient();
+        client.BaseAddress = new Uri(Navigation.BaseUri);
+        return client;
+    }
+
+    private async Task LoadRun()
+    {
+        if (string.IsNullOrWhiteSpace(JobId))
+        {
+            return;
+        }
+
+        try
+        {
+            using var client = NewClient();
+            _run = await client.GetFromJsonAsync<RunSnapshotDto>($"api/manager/runs/{JobId}");
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+        }
+    }
+
+    private sealed class RunSnapshotDto
+    {
+        public string JobId { get; set; } = string.Empty;
+        public string? Ticker { get; set; }
+        public string? AnalysisDate { get; set; }
+        public string? Provider { get; set; }
+        public string? ModelId { get; set; }
+        public string? ResearchDepth { get; set; }
+        public string? Language { get; set; }
+        public int? ContextLength { get; set; }
+        public int? MaxConcurrent { get; set; }
+        public string? Status { get; set; }
+        public int Progress { get; set; }
+        public string? Summary { get; set; }
+        public List<MetricDto> Metrics { get; set; } = [];
+        public List<SignalDto> Signals { get; set; } = [];
+    }
+
+    private sealed class MetricDto
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+    }
+
+    private sealed class SignalDto
+    {
+        public string Signal { get; set; } = string.Empty;
+        public string Source { get; set; } = string.Empty;
+    }
+}
+

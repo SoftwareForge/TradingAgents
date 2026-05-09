@@ -217,3 +217,47 @@ __marimo__/
 
 # Cache
 **/data_cache/
+
+# -----------------------------
+# .NET / C# / Blazor
+# -----------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+AnyCPU/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.cache
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.snupkg
+*.nupkg
+TestResults/
+*.coverage
+*.coveragexml
+.vs/
+artifacts/
+
+# Blazor / Razor / Static Web Assets
+**/wwwroot/_framework/
+**/wwwroot/lib/
+**/obj/**/scopedcss/
+**/obj/**/staticwebassets/
+**/*.rz.scp.css
+**/*.bundle.scp.css
+**/*.staticwebassets.runtime.json
+**/*.staticwebassets.endpoints.json
+
+# -----------------------------
+# IDE / Editor
+# -----------------------------
+.idea/
+.vscode/

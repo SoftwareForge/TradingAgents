@@ -114,6 +114,18 @@ MODEL_OPTIONS: ProviderModeOptions = {
             ("Qwen3:latest (8B, local)", "qwen3:latest"),
         ],
     },
+    "lmstudio": {
+        "quick": [
+            ("Qwen3:latest (local)", "qwen3:latest"),
+            ("GPT-OSS:latest (local)", "gpt-oss:latest"),
+            ("Custom model ID", "custom"),
+        ],
+        "deep": [
+            ("GPT-OSS:latest (local)", "gpt-oss:latest"),
+            ("Qwen3:latest (local)", "qwen3:latest"),
+            ("Custom model ID", "custom"),
+        ],
+    },
 }
 
 

@@ -25,6 +25,8 @@ dependencies = [
     "requests>=2.32.4",
     "rich>=14.0.0",
     "typer>=0.21.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
     "setuptools>=80.9.0",
     "stockstats>=0.6.5",
     "tqdm>=4.67.1",
@@ -34,9 +36,10 @@ dependencies = [
 
 [project.scripts]
 tradingagents = "cli.main:app"
+tradingagents-api = "tradingagents_api.main:run"
 
 [tool.setuptools.packages.find]
-include = ["tradingagents*", "cli*"]
+include = ["tradingagents*", "cli*", "tradingagents_api*"]
 
 [tool.setuptools.package-data]
 cli = ["static/*"]
