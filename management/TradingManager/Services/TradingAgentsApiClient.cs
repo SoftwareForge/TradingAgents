@@ -24,13 +24,27 @@ public sealed class TradingAgentsApiClient
         string provider = "lmstudio",
         int researchDepth = 1,
         string language = "German",
+        string? smallModelOverride = null,
+        string? largeModelOverride = null,
         string reportVerbosity = "standard",
         CancellationToken cancellationToken = default)
     {
-        var selected = await _modelState.GetModelAsync();
-        if (string.IsNullOrWhiteSpace(selected))
+        var currentModels = await _modelState.GetModelsAsync();
+        var resolvedSmall = string.IsNullOrWhiteSpace(smallModelOverride) ? currentModels.SmallModelId : smallModelOverride;
+        var resolvedLarge = string.IsNullOrWhiteSpace(largeModelOverride) ? currentModels.LargeModelId : largeModelOverride;
+
+        if (string.IsNullOrWhiteSpace(resolvedSmall) && !string.IsNullOrWhiteSpace(resolvedLarge))
         {
-            return (false, "No LM Studio model selected.", null);
+            resolvedSmall = resolvedLarge;
+        }
+        if (string.IsNullOrWhiteSpace(resolvedLarge) && !string.IsNullOrWhiteSpace(resolvedSmall))
+        {
+            resolvedLarge = resolvedSmall;
+        }
+
+        if (string.IsNullOrWhiteSpace(resolvedSmall) || string.IsNullOrWhiteSpace(resolvedLarge))
+        {
+            return (false, "No LM Studio model selected for small/large roles.", null);
         }
 
         var payload = new
@@ -38,8 +52,8 @@ public sealed class TradingAgentsApiClient
             ticker,
             analysis_date = analysisDate,
             provider,
-            deep_model = selected,
-            quick_model = selected,
+            deep_model = resolvedLarge,
+            quick_model = resolvedSmall,
             research_depth = researchDepth,
             language,
             report_verbosity = reportVerbosity,

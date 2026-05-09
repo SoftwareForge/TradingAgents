@@ -38,12 +38,19 @@ def get_report_verbosity() -> str:
     """Return normalized report verbosity profile."""
     from tradingagents.dataflows.config import get_config
     value = str(get_config().get("report_verbosity", "standard")).strip().lower()
-    return "compact" if value == "compact" else "standard"
+    if value == "compact":
+        return "compact"
+    if value == "original":
+        return "original"
+    return "standard"
 
 
 def get_analyst_report_instruction() -> str:
     """Return a strict, parser-friendly report structure for analyst outputs."""
     verbosity = get_report_verbosity()
+    if verbosity == "original":
+        # Keep legacy/original TradingAgents analyst prompts unchanged.
+        return ""
     if verbosity == "compact":
         return (
             " Use this exact markdown structure and headings in this order:\n"
@@ -66,6 +73,9 @@ def get_analyst_report_instruction() -> str:
 def get_debate_turn_instruction() -> str:
     """Return instruction that enforces concise, contrastive debate turns."""
     verbosity = get_report_verbosity()
+    if verbosity == "original":
+        # Keep legacy/original TradingAgents debate prompts unchanged.
+        return ""
     if verbosity == "compact":
         return (
             " Turn limit: 120-180 words. Include only new or contrasting arguments, "

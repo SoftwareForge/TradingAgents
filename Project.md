@@ -292,18 +292,18 @@
   - stufenweiser Rollout (Paper/Sandbox -> kleiner Echtgeldbetrag -> schrittweise Skalierung)
 
 ### Neues großes TODO: Dual-Model Support für TradingAgents (Small + Large)
-- [ ] Zielbild definieren: zwei Modellrollen parallel unterstützen
+- [x] Zielbild definieren: zwei Modellrollen parallel unterstützen
   - `small model` für schnelle/operative Aufgaben (z. B. Zwischenanalysen, Extraktion, Komprimierung)
   - `large model` für hochwertige Schlussfolgerungen (z. B. finale Entscheidung/Summary)
-- [ ] Konfigurationsmodell erweitern:
+- [x] Konfigurationsmodell erweitern:
   - getrennte Model-IDs speichern: `small_model_id`, `large_model_id`
-  - optionale getrennte Load-Parameter je Modell (`context_length`, `num_experts`/`max_concurrent`)
-  - Fallback-Regel: wenn nur ein Modell gesetzt ist, beide Rollen auf dasselbe Modell mappen
-- [ ] Manager-API erweitern:
+  - [ ] optionale getrennte Load-Parameter je Modell (`context_length`, `num_experts`/`max_concurrent`)
+  - [x] Fallback-Regel: wenn nur ein Modell gesetzt ist, beide Rollen auf dasselbe Modell mappen
+- [x] Manager-API erweitern:
   - Endpoints/DTOs für duale Modellzuweisung (Small/Large)
   - bestehende Analyse-Start-Requests um Modellrollen ergänzen
   - klare Validierung/Fehlermeldungen bei unvollständiger Konfiguration
-- [ ] UI-Erweiterung:
+- [x] UI-Erweiterung:
   - getrennte Auswahlfelder für Small/Large Model
   - kombinierter Apply-Flow
   - klare Sichtbarkeit, welches Modell aktuell für welche Rolle aktiv ist
@@ -313,7 +313,7 @@
     - Small: Voranalyse, strukturierte Extraktion, Verdichtung
     - Large: Debatte/Finalentscheidung/Final Summary
   - optional später feinere Zuordnung pro Team/Stage
-- [ ] Persistenz erweitern (Run-Historie):
+- [x] Persistenz erweitern (Run-Historie):
   - pro Run beide Modelle + Parameter speichern
   - Auswertung/vergleichbare Historie nach Modellpaaren ermöglichen
 - [ ] Ergebnis-Transparenz:
@@ -321,34 +321,69 @@
   - bei Summary kennzeichnen, welches Modell die Endzusammenfassung erzeugt hat
 
 ### Akzeptanzkriterien: Dual-Model Support
-- [ ] Ein Run kann mit zwei verschiedenen Modellen stabil ausgeführt werden.
-- [ ] Modellrollen sind in UI und Persistenz nachvollziehbar.
-- [ ] Bei fehlender Dual-Konfiguration greift ein klarer, dokumentierter Fallback.
+- [x] Ein Run kann mit zwei verschiedenen Modellen stabil ausgeführt werden.
+- [x] Modellrollen sind in UI und Persistenz nachvollziehbar.
+- [x] Bei fehlender Dual-Konfiguration greift ein klarer, dokumentierter Fallback.
 - [ ] Vergleich mehrerer Runs nach Modellpaaren ist möglich (Performance/Qualität/Kosten).
 
 ### Neues TODO: TA-Live-Telemetrieanzeige (CLI-ähnliche Statuszeile)
-- [ ] Zielanzeige in der UI ergänzen (an TA-CLI angelehnt), z. B.:
+- [x] Zielanzeige in der UI ergänzen (an TA-CLI angelehnt), z. B.:
   - `Agents: 0/12 | LLM: 1 | Tools: 1 | Tokens: 1.7k↑ 208↓ | Reports: 0/7 | ⏱ 00:08`
-- [ ] Datenquellen definieren und mappen:
+- [x] Datenquellen definieren und mappen:
   - `Agents`: laufende/abgeschlossene Agent-Schritte aus Event-Stream
   - `LLM`: aktive LLM-Calls (konkurrent) oder letzter aktiver LLM-Worker
   - `Tools`: aktive Tool-Calls (konkurrent) oder letzter aktiver Tool-Worker
   - `Tokens`: geschätzte/gelieferte Prompt/Completion Tokens (up/down)
   - `Reports`: abgeschlossene vs. erwartete Report-Abschnitte
   - `⏱`: Laufzeit seit Job-Start
-- [ ] API-/Event-Erweiterung (falls nötig):
-  - fehlende Zähler in TradingAgents-Events ergänzen oder im Manager aggregieren
+- [x] API-/Event-Erweiterung (falls nötig):
+  - [x] fehlende Zähler in TradingAgents-Events ergänzen oder im Manager aggregieren
   - klar dokumentierte Fallbacks, wenn einzelne Metriken nicht verfügbar sind
-- [ ] UI-Integration:
+- [x] UI-Integration:
   - kompakte Statuszeile oberhalb des Progress Windows
   - Live-Update im gleichen Takt wie Stream/Polling
   - responsive Darstellung (auf Mobile als 2 Zeilen umbrechen)
-- [ ] Persistenz:
+- [x] Persistenz:
   - Telemetrie-Snapshots pro Run speichern (zeitlich, für spätere Analyse/Replay)
   - finale aggregierte Telemetrie-Werte pro Run speichern (Summary-Ebene)
-  - im Run-Detail die finalen Gesamtzahlen anzeigen
+  - [x] im Run-Detail die finalen Gesamtzahlen anzeigen
 
 ### Akzeptanzkriterien: TA-Live-Telemetrieanzeige
-- [ ] Statuszeile aktualisiert sich live während eines Runs ohne manuellen Refresh.
-- [ ] Werte bleiben bei fehlenden Rohdaten stabil (kein Flackern, sinnvolle Defaults).
-- [ ] Anzeige ist mit TA-Event-Verlauf konsistent und nachvollziehbar.
+- [x] Statuszeile aktualisiert sich live während eines Runs ohne manuellen Refresh.
+- [x] Werte bleiben bei fehlenden Rohdaten stabil (kein Flackern, sinnvolle Defaults).
+- [x] Anzeige ist mit TA-Event-Verlauf konsistent und nachvollziehbar.
+
+### Neues TODO: Markdown Viewer für relevante Ergebnisfelder
+- [x] Markdown-Rendering in der UI für relevante Textfelder einführen:
+  - [x] primär `Summary`
+  - [ ] optional `investment_plan`, `final_trade_decision`, weitere Report-Abschnitte
+- [x] Rendering-Strategie definieren:
+  - [x] Raw/Rendered Toggle pro Feld (Debugbarkeit behalten)
+  - [x] konsistente Typografie für Überschriften, Listen, Tabellen, Code-Blöcke
+- [x] Sicherheitsleitplanken:
+  - [x] HTML-Sanitizing / XSS-Schutz aktivieren
+  - [x] unsichere Inline-Skripte/HTML standardmäßig blockieren
+- [ ] UX-Anforderungen:
+  - gute Lesbarkeit bei langen Texten (max-height + Scroll)
+  - saubere mobile Darstellung
+  - Copy-to-Clipboard für Markdown-Rohtext optional
+- [ ] Persistenz/Kompatibilität:
+  - gespeicherte Inhalte weiterhin als Plain-Text/Markdown persistieren (kein HTML speichern)
+  - bestehende API/DTO-Verträge unverändert lassen
+
+### Akzeptanzkriterien: Markdown Viewer
+- [ ] Summary wird standardmäßig formatiert als Markdown dargestellt.
+- [ ] Nutzer kann bei Bedarf auf Rohtext wechseln.
+- [ ] Rendering ist sicher (kein ausführbares HTML/Script).
+- [ ] Bestehende Daten und Endpunkte bleiben abwärtskompatibel.
+
+### Neues TODO: Trading-Signal-Detailmodal erweitern
+- [ ] Im Trading-Signal-Modal den gesamten relevanten Kontext anzeigen (statt stark gekürztem Ausschnitt).
+- [ ] Kontextfeld im Modal als scrollbaren Bereich auslegen (für lange Inhalte).
+- [ ] Markdown-Rendering auch im Signal-Detailmodal aktivieren (inkl. Tabellen/Listen).
+- [ ] Optionaler Raw/Rendered Toggle im Modal für Diagnose/Debug.
+
+### Akzeptanzkriterien: Trading-Signal-Detailmodal
+- [ ] Signal-Details zeigen den vollständigen relevanten Kontext.
+- [ ] Lange Inhalte bleiben über Scroll gut nutzbar und sprengen das Layout nicht.
+- [ ] Kontext ist sicher als Markdown gerendert (kein unsicheres HTML/Script).

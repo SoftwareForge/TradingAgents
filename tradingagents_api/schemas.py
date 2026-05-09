@@ -24,7 +24,7 @@ class AnalysisCreateRequest(BaseModel):
     quick_model: str = Field(min_length=1)
     research_depth: int = Field(default=1, ge=1, le=5)
     language: str = Field(default="English")
-    report_verbosity: Literal["standard", "compact"] = "standard"
+    report_verbosity: Literal["original", "standard", "compact"] = "standard"
     backend_url: Optional[str] = None
     analysts: Optional[list[str]] = None
     checkpoint_enabled: bool = False

@@ -3,6 +3,7 @@
 @using System.Net.Http.Json
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
+@inject TradingManager.Services.MarkdownRenderService MarkdownRenderer
 
 <PageTitle>Run Details</PageTitle>
 
@@ -32,16 +33,31 @@ else
             <p class="mb-1"><strong>Date:</strong> @_run.AnalysisDate</p>
             <p class="mb-1"><strong>Status:</strong> @_run.Status (@_run.Progress%)</p>
             <p class="mb-1"><strong>Model:</strong> @_run.ModelId</p>
+            <p class="mb-1"><strong>Small Model:</strong> @(_run.SmallModelId ?? "-")</p>
+            <p class="mb-1"><strong>Large Model:</strong> @(_run.LargeModelId ?? "-")</p>
             <p class="mb-1"><strong>Context Length:</strong> @(_run.ContextLength?.ToString() ?? "-")</p>
             <p class="mb-1"><strong>Max Concurrent:</strong> @(_run.MaxConcurrent?.ToString() ?? "-")</p>
+            <p class="mb-1"><strong>Telemetry:</strong> Agents @(_run.AgentsCompleted ?? 0)/@(_run.AgentsTotal ?? 0) | LLM @(_run.LlmCalls ?? 0) | Tools @(_run.ToolCalls ?? 0) | Tokens @(_run.PromptTokens ?? 0)↑ @(_run.CompletionTokens ?? 0)↓ | Reports @(_run.ReportsCompleted ?? 0)/@(_run.ReportsTotal ?? 0) | ⏱ @(_run.ElapsedSeconds ?? 0)s</p>
             <p class="mb-0"><strong>Provider:</strong> @_run.Provider</p>
         </div>
     </div>
 
     <div class="card mb-3">
         <div class="card-body">
-            <h5 class="card-title">Summary</h5>
-            <pre class="p-2 bg-light border">@(_run.Summary ?? "-")</pre>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="card-title mb-0">Summary</h5>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="@(() => _renderSummaryMarkdown = !_renderSummaryMarkdown)">
+                    @(_renderSummaryMarkdown ? "Raw" : "Markdown")
+                </button>
+            </div>
+            @if (_renderSummaryMarkdown)
+            {
+                <div class="p-2 bg-light border markdown-content">@((MarkupString)MarkdownRenderer.ToSafeHtml(_run.Summary ?? "-"))</div>
+            }
+            else
+            {
+                <pre class="p-2 bg-light border">@(_run.Summary ?? "-")</pre>
+            }
         </div>
     </div>
 
@@ -89,6 +105,7 @@ else
 
     private RunSnapshotDto? _run;
     private string? _message;
+    private bool _renderSummaryMarkdown = true;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -127,10 +144,21 @@ else
         public string? AnalysisDate { get; set; }
         public string? Provider { get; set; }
         public string? ModelId { get; set; }
+        public string? SmallModelId { get; set; }
+        public string? LargeModelId { get; set; }
         public string? ResearchDepth { get; set; }
         public string? Language { get; set; }
         public int? ContextLength { get; set; }
         public int? MaxConcurrent { get; set; }
+        public int? AgentsCompleted { get; set; }
+        public int? AgentsTotal { get; set; }
+        public int? LlmCalls { get; set; }
+        public int? ToolCalls { get; set; }
+        public int? PromptTokens { get; set; }
+        public int? CompletionTokens { get; set; }
+        public int? ReportsCompleted { get; set; }
+        public int? ReportsTotal { get; set; }
+        public int? ElapsedSeconds { get; set; }
         public string? Status { get; set; }
         public int Progress { get; set; }
         public string? Summary { get; set; }
@@ -150,4 +178,3 @@ else
         public string Source { get; set; } = string.Empty;
     }
 }
-

@@ -71,6 +71,26 @@ def _detect_event_identity(message: Any) -> tuple[str, str]:
     return ("System", "System")
 
 
+def _extract_token_usage(message: Any) -> tuple[int, int]:
+    """Best-effort token usage extraction from LangChain message objects."""
+    prompt_tokens = 0
+    completion_tokens = 0
+
+    usage = getattr(message, "usage_metadata", None)
+    if isinstance(usage, dict):
+        prompt_tokens += int(usage.get("input_tokens") or usage.get("prompt_tokens") or 0)
+        completion_tokens += int(usage.get("output_tokens") or usage.get("completion_tokens") or 0)
+
+    kwargs = getattr(message, "additional_kwargs", None)
+    if isinstance(kwargs, dict):
+        token_usage = kwargs.get("token_usage")
+        if isinstance(token_usage, dict):
+            prompt_tokens += int(token_usage.get("prompt_tokens") or 0)
+            completion_tokens += int(token_usage.get("completion_tokens") or 0)
+
+    return prompt_tokens, completion_tokens
+
+
 def _emit(on_event: Optional[Callable[[dict[str, Any]], None]], payload: dict[str, Any]) -> None:
     if on_event:
         on_event(payload)
@@ -147,6 +167,7 @@ def run_analysis_job(
             text = _extract_message_text(message)
             if text:
                 team, agent = _detect_event_identity(message)
+                prompt_tokens, completion_tokens = _extract_token_usage(message)
                 _emit(
                     on_event,
                     {
@@ -156,6 +177,8 @@ def run_analysis_job(
                         "team": team,
                         "agent": agent,
                         "message": text,
+                        "prompt_tokens": prompt_tokens,
+                        "completion_tokens": completion_tokens,
                     },
                 )
 

@@ -254,6 +254,26 @@
     margin-bottom: 12px;
 }
 
+.telemetry-line {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.9rem;
+    color: #334155;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .telemetry-line {
+        white-space: normal;
+        overflow-x: visible;
+        line-height: 1.35;
+    }
+}
+
 .active-run-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

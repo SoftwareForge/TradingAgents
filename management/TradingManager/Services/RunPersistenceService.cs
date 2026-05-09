@@ -28,13 +28,17 @@ public sealed class RunPersistenceService
         runCmd.CommandText =
             """
             INSERT INTO runs (
-                job_id, ticker, analysis_date, provider, model_id, research_depth, language,
+                job_id, ticker, analysis_date, provider, model_id, small_model_id, large_model_id, research_depth, language,
                 context_length, max_concurrent,
+                agents_completed, agents_total, llm_calls, tool_calls, prompt_tokens, completion_tokens,
+                reports_completed, reports_total, elapsed_seconds,
                 status, progress, queue_info, created_at, started_at, finished_at, last_error,
                 cancel_requested, summary, raw_status_json, raw_result_json, updated_at
             ) VALUES (
-                $job_id, $ticker, $analysis_date, $provider, $model_id, $research_depth, $language,
+                $job_id, $ticker, $analysis_date, $provider, $model_id, $small_model_id, $large_model_id, $research_depth, $language,
                 $context_length, $max_concurrent,
+                $agents_completed, $agents_total, $llm_calls, $tool_calls, $prompt_tokens, $completion_tokens,
+                $reports_completed, $reports_total, $elapsed_seconds,
                 $status, $progress, $queue_info, $created_at, $started_at, $finished_at, $last_error,
                 $cancel_requested, $summary, $raw_status_json, $raw_result_json, $updated_at
             )
@@ -43,10 +47,21 @@ public sealed class RunPersistenceService
                 analysis_date=excluded.analysis_date,
                 provider=excluded.provider,
                 model_id=excluded.model_id,
+                small_model_id=excluded.small_model_id,
+                large_model_id=excluded.large_model_id,
                 research_depth=excluded.research_depth,
                 language=excluded.language,
                 context_length=excluded.context_length,
                 max_concurrent=excluded.max_concurrent,
+                agents_completed=excluded.agents_completed,
+                agents_total=excluded.agents_total,
+                llm_calls=excluded.llm_calls,
+                tool_calls=excluded.tool_calls,
+                prompt_tokens=excluded.prompt_tokens,
+                completion_tokens=excluded.completion_tokens,
+                reports_completed=excluded.reports_completed,
+                reports_total=excluded.reports_total,
+                elapsed_seconds=excluded.elapsed_seconds,
                 status=excluded.status,
                 progress=excluded.progress,
                 queue_info=excluded.queue_info,
@@ -65,10 +80,21 @@ public sealed class RunPersistenceService
         runCmd.Parameters.AddWithValue("$analysis_date", (object?)snapshot.AnalysisDate ?? DBNull.Value);
         runCmd.Parameters.AddWithValue("$provider", (object?)snapshot.Provider ?? DBNull.Value);
         runCmd.Parameters.AddWithValue("$model_id", (object?)snapshot.ModelId ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$small_model_id", (object?)snapshot.SmallModelId ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$large_model_id", (object?)snapshot.LargeModelId ?? DBNull.Value);
         runCmd.Parameters.AddWithValue("$research_depth", (object?)snapshot.ResearchDepth ?? DBNull.Value);
         runCmd.Parameters.AddWithValue("$language", (object?)snapshot.Language ?? DBNull.Value);
         runCmd.Parameters.AddWithValue("$context_length", (object?)snapshot.ContextLength ?? DBNull.Value);
         runCmd.Parameters.AddWithValue("$max_concurrent", (object?)snapshot.MaxConcurrent ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$agents_completed", (object?)snapshot.AgentsCompleted ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$agents_total", (object?)snapshot.AgentsTotal ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$llm_calls", (object?)snapshot.LlmCalls ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$tool_calls", (object?)snapshot.ToolCalls ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$prompt_tokens", (object?)snapshot.PromptTokens ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$completion_tokens", (object?)snapshot.CompletionTokens ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$reports_completed", (object?)snapshot.ReportsCompleted ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$reports_total", (object?)snapshot.ReportsTotal ?? DBNull.Value);
+        runCmd.Parameters.AddWithValue("$elapsed_seconds", (object?)snapshot.ElapsedSeconds ?? DBNull.Value);
         runCmd.Parameters.AddWithValue("$status", (object?)snapshot.Status ?? DBNull.Value);
         runCmd.Parameters.AddWithValue("$progress", snapshot.Progress);
         runCmd.Parameters.AddWithValue("$queue_info", (object?)snapshot.QueueInfo ?? DBNull.Value);
@@ -135,6 +161,31 @@ public sealed class RunPersistenceService
             }
         }
 
+        var telemetryCmd = connection.CreateCommand();
+        telemetryCmd.Transaction = tx;
+        telemetryCmd.CommandText =
+            """
+            INSERT INTO run_telemetry (
+                job_id, ts, agents_completed, agents_total, llm_calls, tool_calls, prompt_tokens,
+                completion_tokens, reports_completed, reports_total, elapsed_seconds
+            ) VALUES (
+                $job_id, $ts, $agents_completed, $agents_total, $llm_calls, $tool_calls, $prompt_tokens,
+                $completion_tokens, $reports_completed, $reports_total, $elapsed_seconds
+            );
+            """;
+        telemetryCmd.Parameters.AddWithValue("$job_id", snapshot.JobId);
+        telemetryCmd.Parameters.AddWithValue("$ts", DateTime.UtcNow.ToString("O"));
+        telemetryCmd.Parameters.AddWithValue("$agents_completed", (object?)snapshot.AgentsCompleted ?? DBNull.Value);
+        telemetryCmd.Parameters.AddWithValue("$agents_total", (object?)snapshot.AgentsTotal ?? DBNull.Value);
+        telemetryCmd.Parameters.AddWithValue("$llm_calls", (object?)snapshot.LlmCalls ?? DBNull.Value);
+        telemetryCmd.Parameters.AddWithValue("$tool_calls", (object?)snapshot.ToolCalls ?? DBNull.Value);
+        telemetryCmd.Parameters.AddWithValue("$prompt_tokens", (object?)snapshot.PromptTokens ?? DBNull.Value);
+        telemetryCmd.Parameters.AddWithValue("$completion_tokens", (object?)snapshot.CompletionTokens ?? DBNull.Value);
+        telemetryCmd.Parameters.AddWithValue("$reports_completed", (object?)snapshot.ReportsCompleted ?? DBNull.Value);
+        telemetryCmd.Parameters.AddWithValue("$reports_total", (object?)snapshot.ReportsTotal ?? DBNull.Value);
+        telemetryCmd.Parameters.AddWithValue("$elapsed_seconds", (object?)snapshot.ElapsedSeconds ?? DBNull.Value);
+        await telemetryCmd.ExecuteNonQueryAsync(ct);
+
         await tx.CommitAsync(ct);
     }
 
@@ -145,7 +196,7 @@ public sealed class RunPersistenceService
         var cmd = connection.CreateCommand();
         cmd.CommandText =
             """
-            SELECT job_id, ticker, analysis_date, status, progress, provider, model_id, context_length, max_concurrent, updated_at
+            SELECT job_id, ticker, analysis_date, status, progress, provider, model_id, small_model_id, large_model_id, context_length, max_concurrent, updated_at
             FROM runs
             ORDER BY datetime(updated_at) DESC
             LIMIT $limit;
@@ -164,9 +215,11 @@ public sealed class RunPersistenceService
                 reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
                 reader.IsDBNull(5) ? null : reader.GetString(5),
                 reader.IsDBNull(6) ? null : reader.GetString(6),
-                reader.IsDBNull(7) ? null : reader.GetInt32(7),
-                reader.IsDBNull(8) ? null : reader.GetInt32(8),
-                reader.IsDBNull(9) ? null : reader.GetString(9)));
+                reader.IsDBNull(7) ? null : reader.GetString(7),
+                reader.IsDBNull(8) ? null : reader.GetString(8),
+                reader.IsDBNull(9) ? null : reader.GetInt32(9),
+                reader.IsDBNull(10) ? null : reader.GetInt32(10),
+                reader.IsDBNull(11) ? null : reader.GetString(11)));
         }
         return items;
     }
@@ -180,7 +233,10 @@ public sealed class RunPersistenceService
         runCmd.CommandText =
             """
             SELECT
-                job_id, ticker, analysis_date, provider, model_id, research_depth, language, context_length, max_concurrent, status, progress,
+                job_id, ticker, analysis_date, provider, model_id, research_depth, language, context_length, max_concurrent,
+                agents_completed, agents_total, llm_calls, tool_calls, prompt_tokens, completion_tokens, reports_completed, reports_total, elapsed_seconds,
+                small_model_id, large_model_id,
+                status, progress,
                 queue_info, created_at, started_at, finished_at, last_error, cancel_requested, summary,
                 raw_status_json, raw_result_json
             FROM runs WHERE job_id = $job_id;
@@ -203,17 +259,28 @@ public sealed class RunPersistenceService
             Language = runReader.IsDBNull(6) ? null : runReader.GetString(6),
             ContextLength = runReader.IsDBNull(7) ? null : runReader.GetInt32(7),
             MaxConcurrent = runReader.IsDBNull(8) ? null : runReader.GetInt32(8),
-            Status = runReader.IsDBNull(9) ? null : runReader.GetString(9),
-            Progress = runReader.IsDBNull(10) ? 0 : runReader.GetInt32(10),
-            QueueInfo = runReader.IsDBNull(11) ? null : runReader.GetString(11),
-            CreatedAt = runReader.IsDBNull(12) ? null : runReader.GetString(12),
-            StartedAt = runReader.IsDBNull(13) ? null : runReader.GetString(13),
-            FinishedAt = runReader.IsDBNull(14) ? null : runReader.GetString(14),
-            LastError = runReader.IsDBNull(15) ? null : runReader.GetString(15),
-            CancelRequested = !runReader.IsDBNull(16) && runReader.GetInt32(16) == 1,
-            Summary = runReader.IsDBNull(17) ? null : runReader.GetString(17),
-            RawStatusJson = runReader.IsDBNull(18) ? null : runReader.GetString(18),
-            RawResultJson = runReader.IsDBNull(19) ? null : runReader.GetString(19),
+            AgentsCompleted = runReader.IsDBNull(9) ? null : runReader.GetInt32(9),
+            AgentsTotal = runReader.IsDBNull(10) ? null : runReader.GetInt32(10),
+            LlmCalls = runReader.IsDBNull(11) ? null : runReader.GetInt32(11),
+            ToolCalls = runReader.IsDBNull(12) ? null : runReader.GetInt32(12),
+            PromptTokens = runReader.IsDBNull(13) ? null : runReader.GetInt32(13),
+            CompletionTokens = runReader.IsDBNull(14) ? null : runReader.GetInt32(14),
+            ReportsCompleted = runReader.IsDBNull(15) ? null : runReader.GetInt32(15),
+            ReportsTotal = runReader.IsDBNull(16) ? null : runReader.GetInt32(16),
+            ElapsedSeconds = runReader.IsDBNull(17) ? null : runReader.GetInt32(17),
+            SmallModelId = runReader.IsDBNull(18) ? null : runReader.GetString(18),
+            LargeModelId = runReader.IsDBNull(19) ? null : runReader.GetString(19),
+            Status = runReader.IsDBNull(20) ? null : runReader.GetString(20),
+            Progress = runReader.IsDBNull(21) ? 0 : runReader.GetInt32(21),
+            QueueInfo = runReader.IsDBNull(22) ? null : runReader.GetString(22),
+            CreatedAt = runReader.IsDBNull(23) ? null : runReader.GetString(23),
+            StartedAt = runReader.IsDBNull(24) ? null : runReader.GetString(24),
+            FinishedAt = runReader.IsDBNull(25) ? null : runReader.GetString(25),
+            LastError = runReader.IsDBNull(26) ? null : runReader.GetString(26),
+            CancelRequested = !runReader.IsDBNull(27) && runReader.GetInt32(27) == 1,
+            Summary = runReader.IsDBNull(28) ? null : runReader.GetString(28),
+            RawStatusJson = runReader.IsDBNull(29) ? null : runReader.GetString(29),
+            RawResultJson = runReader.IsDBNull(30) ? null : runReader.GetString(30),
         };
         await runReader.CloseAsync();
 
@@ -260,10 +327,21 @@ public sealed class RunPersistenceService
                 analysis_date TEXT NULL,
                 provider TEXT NULL,
                 model_id TEXT NULL,
+                small_model_id TEXT NULL,
+                large_model_id TEXT NULL,
                 research_depth TEXT NULL,
                 language TEXT NULL,
                 context_length INTEGER NULL,
                 max_concurrent INTEGER NULL,
+                agents_completed INTEGER NULL,
+                agents_total INTEGER NULL,
+                llm_calls INTEGER NULL,
+                tool_calls INTEGER NULL,
+                prompt_tokens INTEGER NULL,
+                completion_tokens INTEGER NULL,
+                reports_completed INTEGER NULL,
+                reports_total INTEGER NULL,
+                elapsed_seconds INTEGER NULL,
                 status TEXT NULL,
                 progress INTEGER NOT NULL DEFAULT 0,
                 queue_info TEXT NULL,
@@ -295,11 +373,37 @@ public sealed class RunPersistenceService
                 context TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS run_telemetry (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id TEXT NOT NULL,
+                ts TEXT NOT NULL,
+                agents_completed INTEGER NULL,
+                agents_total INTEGER NULL,
+                llm_calls INTEGER NULL,
+                tool_calls INTEGER NULL,
+                prompt_tokens INTEGER NULL,
+                completion_tokens INTEGER NULL,
+                reports_completed INTEGER NULL,
+                reports_total INTEGER NULL,
+                elapsed_seconds INTEGER NULL
+            );
             """;
         cmd.ExecuteNonQuery();
 
         EnsureColumn(connection, "runs", "context_length", "INTEGER NULL");
         EnsureColumn(connection, "runs", "max_concurrent", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "small_model_id", "TEXT NULL");
+        EnsureColumn(connection, "runs", "large_model_id", "TEXT NULL");
+        EnsureColumn(connection, "runs", "agents_completed", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "agents_total", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "llm_calls", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "tool_calls", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "prompt_tokens", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "completion_tokens", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "reports_completed", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "reports_total", "INTEGER NULL");
+        EnsureColumn(connection, "runs", "elapsed_seconds", "INTEGER NULL");
     }
 
     private static void EnsureColumn(SqliteConnection connection, string table, string column, string ddlType)
@@ -328,10 +432,21 @@ public sealed class RunSnapshot
     public string? AnalysisDate { get; set; }
     public string? Provider { get; set; }
     public string? ModelId { get; set; }
+    public string? SmallModelId { get; set; }
+    public string? LargeModelId { get; set; }
     public string? ResearchDepth { get; set; }
     public string? Language { get; set; }
     public int? ContextLength { get; set; }
     public int? MaxConcurrent { get; set; }
+    public int? AgentsCompleted { get; set; }
+    public int? AgentsTotal { get; set; }
+    public int? LlmCalls { get; set; }
+    public int? ToolCalls { get; set; }
+    public int? PromptTokens { get; set; }
+    public int? CompletionTokens { get; set; }
+    public int? ReportsCompleted { get; set; }
+    public int? ReportsTotal { get; set; }
+    public int? ElapsedSeconds { get; set; }
     public string? Status { get; set; }
     public int Progress { get; set; }
     public string? QueueInfo { get; set; }
@@ -357,6 +472,8 @@ public sealed record RunSnapshotSummary(
     int Progress,
     string? Provider,
     string? ModelId,
+    string? SmallModelId,
+    string? LargeModelId,
     int? ContextLength,
     int? MaxConcurrent,
     string? UpdatedAt);

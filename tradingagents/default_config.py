@@ -32,7 +32,8 @@ DEFAULT_CONFIG = {
     # Internal agent debate stays in English for reasoning quality
     "output_language": "English",
     # Report verbosity profile for analyst outputs:
-    # - standard: richer narrative
+    # - original: no extra verbosity constraints; keep original prompts
+    # - standard: richer narrative with structured guidance
     # - compact: same structure, fewer words and tighter bullets
     "report_verbosity": "standard",
     # Debate and discussion settings

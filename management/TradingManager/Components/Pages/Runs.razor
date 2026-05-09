@@ -32,7 +32,7 @@ else
                     <span>@(run.UpdatedAt ?? "-")</span>
                 </div>
                 <div class="small text-muted">
-                    @run.Ticker | @run.AnalysisDate | @run.Status (@run.Progress%) | @run.ModelId
+                    @run.Ticker | @run.AnalysisDate | @run.Status (@run.Progress%) | S: @run.SmallModelId | L: @run.LargeModelId
                     @if (run.ContextLength.HasValue || run.MaxConcurrent.HasValue)
                     {
                         <span> | ctx: @run.ContextLength | experts: @run.MaxConcurrent</span>
@@ -93,9 +93,10 @@ else
         public int Progress { get; set; }
         public string? Provider { get; set; }
         public string? ModelId { get; set; }
+        public string? SmallModelId { get; set; }
+        public string? LargeModelId { get; set; }
         public int? ContextLength { get; set; }
         public int? MaxConcurrent { get; set; }
         public string? UpdatedAt { get; set; }
     }
 }
-

@@ -13,6 +13,7 @@ builder.Services.AddSingleton<ModelSelectionState>();
 builder.Services.AddHttpClient<LmStudioService>();
 builder.Services.AddHttpClient<TradingAgentsApiClient>();
 builder.Services.AddSingleton<RunPersistenceService>();
+builder.Services.AddSingleton<MarkdownRenderService>();
 
 var app = builder.Build();
 
@@ -39,7 +40,8 @@ manager.MapGet("/status", async (
     ModelSelectionState modelState) =>
 {
     var status = await process.GetStatusAsync();
-    var model = await modelState.GetModelAsync();
+    var models = await modelState.GetModelsAsync();
+    var selectedModel = models.LargeModelId ?? models.SmallModelId;
     return Results.Ok(new
     {
         tradingAgentsApi = new
@@ -49,7 +51,9 @@ manager.MapGet("/status", async (
             startedAt = status.StartedAt,
             baseUrl = process.GetBaseUrl(),
         },
-        selectedModel = model,
+        selectedModel,
+        smallModel = models.SmallModelId,
+        largeModel = models.LargeModelId,
     });
 });
 
@@ -108,8 +112,23 @@ manager.MapPost("/lmstudio/load", async (
         return Results.Problem("Failed to load model in LM Studio.");
     }
 
-    await modelState.SetModelAsync(req.ModelId);
-    return Results.Ok(new { loaded = true, selectedModel = req.ModelId });
+    if (!string.IsNullOrWhiteSpace(req.TargetRole))
+    {
+        await modelState.SetModelForRoleAsync(req.TargetRole, req.ModelId);
+    }
+    else
+    {
+        await modelState.SetModelAsync(req.ModelId);
+    }
+
+    var models = await modelState.GetModelsAsync();
+    return Results.Ok(new
+    {
+        loaded = true,
+        selectedModel = models.LargeModelId ?? models.SmallModelId,
+        smallModel = models.SmallModelId,
+        largeModel = models.LargeModelId,
+    });
 });
 
 manager.MapPost("/lmstudio/unload", async (
@@ -128,7 +147,18 @@ manager.MapPost("/lmstudio/unload", async (
         return Results.Problem("Failed to unload model in LM Studio.");
     }
 
-    await modelState.SetModelAsync(null);
+    if (!string.IsNullOrWhiteSpace(modelId))
+    {
+        var models = await modelState.GetModelsAsync();
+        var nextSmall = string.Equals(models.SmallModelId, modelId, StringComparison.OrdinalIgnoreCase) ? null : models.SmallModelId;
+        var nextLarge = string.Equals(models.LargeModelId, modelId, StringComparison.OrdinalIgnoreCase) ? null : models.LargeModelId;
+        await modelState.SetModelsAsync(nextSmall, nextLarge);
+    }
+    else
+    {
+        await modelState.SetModelsAsync(null, null);
+    }
+
     return Results.Ok(new { unloaded = true });
 });
 
@@ -141,8 +171,53 @@ manager.MapPost("/tradingagents/select-model", async (
         return Results.BadRequest(new { error = "modelId is required" });
     }
 
-    await modelState.SetModelAsync(req.ModelId);
-    return Results.Ok(new { selectedModel = req.ModelId });
+    if (!string.IsNullOrWhiteSpace(req.Role))
+    {
+        await modelState.SetModelForRoleAsync(req.Role, req.ModelId);
+    }
+    else
+    {
+        await modelState.SetModelAsync(req.ModelId);
+    }
+
+    var models = await modelState.GetModelsAsync();
+    return Results.Ok(new
+    {
+        selectedModel = models.LargeModelId ?? models.SmallModelId,
+        smallModel = models.SmallModelId,
+        largeModel = models.LargeModelId,
+    });
+});
+
+manager.MapPost("/tradingagents/select-models", async (
+    ModelSelectionState modelState,
+    SelectModelsRequest req) =>
+{
+    if (string.IsNullOrWhiteSpace(req.SmallModelId) && string.IsNullOrWhiteSpace(req.LargeModelId))
+    {
+        return Results.BadRequest(new { error = "At least one model id is required." });
+    }
+
+    var current = await modelState.GetModelsAsync();
+    var resolvedSmall = string.IsNullOrWhiteSpace(req.SmallModelId) ? current.SmallModelId : req.SmallModelId;
+    var resolvedLarge = string.IsNullOrWhiteSpace(req.LargeModelId) ? current.LargeModelId : req.LargeModelId;
+
+    if (string.IsNullOrWhiteSpace(resolvedSmall) && !string.IsNullOrWhiteSpace(resolvedLarge))
+    {
+        resolvedSmall = resolvedLarge;
+    }
+    if (string.IsNullOrWhiteSpace(resolvedLarge) && !string.IsNullOrWhiteSpace(resolvedSmall))
+    {
+        resolvedLarge = resolvedSmall;
+    }
+
+    await modelState.SetModelsAsync(resolvedSmall, resolvedLarge);
+    return Results.Ok(new
+    {
+        selectedModel = resolvedLarge ?? resolvedSmall,
+        smallModel = resolvedSmall,
+        largeModel = resolvedLarge,
+    });
 });
 
 manager.MapPost("/tradingagents/analyze", async (
@@ -156,6 +231,8 @@ manager.MapPost("/tradingagents/analyze", async (
         req.Provider,
         req.ResearchDepth,
         req.Language,
+        req.SmallModelId,
+        req.LargeModelId,
         req.ReportVerbosity,
         ct);
 
@@ -392,14 +469,17 @@ manager.MapGet("/runs/{jobId}", async (
 
 app.Run();
 
-sealed record LoadModelRequest(string ModelId, int? ContextLength = null, int? MaxConcurrent = null);
+sealed record LoadModelRequest(string ModelId, int? ContextLength = null, int? MaxConcurrent = null, string? TargetRole = null);
 sealed record UnloadModelRequest(string? ModelId = null);
-sealed record SelectModelRequest(string ModelId);
+sealed record SelectModelRequest(string ModelId, string? Role = null);
+sealed record SelectModelsRequest(string? SmallModelId = null, string? LargeModelId = null);
 sealed record AnalyzeRequest(
     string Ticker,
     string AnalysisDate,
     string Provider = "lmstudio",
     int ResearchDepth = 1,
     string Language = "German",
+    string? SmallModelId = null,
+    string? LargeModelId = null,
     string ReportVerbosity = "standard");
 sealed record SummarizeRequest(string Language = "English");
