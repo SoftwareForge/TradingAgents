@@ -24,6 +24,7 @@ public sealed class TradingAgentsApiClient
         string provider = "lmstudio",
         int researchDepth = 1,
         string language = "German",
+        string reportVerbosity = "standard",
         CancellationToken cancellationToken = default)
     {
         var selected = await _modelState.GetModelAsync();
@@ -41,6 +42,7 @@ public sealed class TradingAgentsApiClient
             quick_model = selected,
             research_depth = researchDepth,
             language,
+            report_verbosity = reportVerbosity,
         };
 
         var baseUrl = _processService.GetBaseUrl();

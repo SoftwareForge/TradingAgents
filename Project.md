@@ -1,7 +1,7 @@
 # TODO (Fork-Branch)
 
 ## Status
-- Neuer Fork: LM-Studio-Integration umgesetzt; Verbosity-Optimierung ist noch umzusetzen.
+- Neuer Fork: LM-Studio-Integration umgesetzt; Verbosity-Optimierung umgesetzt.
 
 ## Im neuen Fork noch umzusetzen
 - [x] Neues CLI-Provider-Label hinzufügen:
@@ -17,19 +17,19 @@
     - Linux (typisch): `http://172.17.0.1:1234/v1`
 
 ## kompaktere Ausgaben ohne Qualitätsverlust
-- [ ] Analyst-Prompts auf kompakte, evidenzdichte Struktur umstellen
+- [x] Analyst-Prompts auf kompakte, evidenzdichte Struktur umstellen
   - Executive Summary: 5-10 (bis 300 Wörter) Sätze
   - Key Evidence: 5-10 Bullet Points
   - Actionable Implications: 5-10 Bullet Points
   - Tabelle: max. 10 Zeilen
   - Einheitliche ausgabe/struktur erzwingen. Für bessere vergleichbarkeit
-- [ ] Debattenagenten (Bull/Bear + Risk) mit Turn-Limits versehen
+- [x] Debattenagenten (Bull/Bear + Risk) mit Turn-Limits versehen
   - pro Turn 150-200 Wörter
   - nur neue/kontrastierende Argumente, Wiederholungen vermeiden
-- [ ] Structured-Output-Feldanweisungen straffen
+- [x] Structured-Output-Feldanweisungen straffen
   - keine neuen Felder
   - bestehende Header/Parser-Kompatibilität beibehalten
-- [ ] Optionalen Config-Key `report_verbosity` einführen
+- [x] Optionalen Config-Key `report_verbosity` einführen
   - `standard` (Default), `compact` (optional)
 - Aktuelle werte als Referenz (aus einem run)
   - Aggressive Risk Analyst: 890 Wörter

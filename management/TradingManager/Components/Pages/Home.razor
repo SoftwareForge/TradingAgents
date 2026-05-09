@@ -100,6 +100,15 @@
                                 }
                             </select>
                         </div>
+                        <div>
+                            <label class="form-label" for="verbosityInput">Report Verbosity</label>
+                            <select id="verbosityInput" class="form-select" @bind="_reportVerbosity">
+                                @foreach (var v in _reportVerbosityOptions)
+                                {
+                                    <option value="@v">@v</option>
+                                }
+                            </select>
+                        </div>
                     </div>
                     <div class="run-actions mt-2">
                         <button class="btn btn-warning icon-btn" title="@(HasActiveRun ? "Neuen Run in Queue stellen" : "TradingAgents starten")" aria-label="TradingAgents starten" @onclick="StartAnalysis">
@@ -309,6 +318,7 @@
     private DateTime _analysisDateValue = DateTime.Today;
     private string _language = "English";
     private string _researchDepthLabel = "Shallow";
+    private string _reportVerbosity = "standard";
     private string _contextLengthLabel = "32k";
     private int? _maxConcurrent;
     private readonly string[] _languages =
@@ -322,6 +332,7 @@
         "Korean",
     ];
     private readonly string[] _researchDepthOptions = ["Shallow", "Medium", "Deep"];
+    private readonly string[] _reportVerbosityOptions = ["standard", "compact"];
     private readonly string[] _contextLengthOptions = ["32k", "64k", "128k", "256k"];
     private string? _message;
     private string? _jobId;
@@ -558,6 +569,7 @@
                     provider = "lmstudio",
                     researchDepth = MapResearchDepth(_researchDepthLabel),
                     language = _language,
+                    reportVerbosity = _reportVerbosity,
                 });
 
             var body = await response.Content.ReadAsStringAsync();
@@ -1187,6 +1199,7 @@
                 ModelId = _selectedModel,
                 ResearchDepth = _researchDepthLabel,
                 Language = _language,
+                ReportVerbosity = _reportVerbosity,
                 ContextLength = MapContextLength(_contextLengthLabel),
                 MaxConcurrent = _maxConcurrent,
                 Status = _liveJobStatus,
@@ -1279,6 +1292,7 @@
         public string? ModelId { get; set; }
         public string? ResearchDepth { get; set; }
         public string? Language { get; set; }
+        public string? ReportVerbosity { get; set; }
         public int? ContextLength { get; set; }
         public int? MaxConcurrent { get; set; }
         public string? Status { get; set; }

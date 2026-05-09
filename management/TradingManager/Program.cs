@@ -156,6 +156,7 @@ manager.MapPost("/tradingagents/analyze", async (
         req.Provider,
         req.ResearchDepth,
         req.Language,
+        req.ReportVerbosity,
         ct);
 
     if (!result.Ok)
@@ -399,5 +400,6 @@ sealed record AnalyzeRequest(
     string AnalysisDate,
     string Provider = "lmstudio",
     int ResearchDepth = 1,
-    string Language = "German");
+    string Language = "German",
+    string ReportVerbosity = "standard");
 sealed record SummarizeRequest(string Language = "English");

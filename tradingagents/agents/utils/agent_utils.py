@@ -34,6 +34,49 @@ def get_language_instruction() -> str:
     return f" Write your entire response in {lang}."
 
 
+def get_report_verbosity() -> str:
+    """Return normalized report verbosity profile."""
+    from tradingagents.dataflows.config import get_config
+    value = str(get_config().get("report_verbosity", "standard")).strip().lower()
+    return "compact" if value == "compact" else "standard"
+
+
+def get_analyst_report_instruction() -> str:
+    """Return a strict, parser-friendly report structure for analyst outputs."""
+    verbosity = get_report_verbosity()
+    if verbosity == "compact":
+        return (
+            " Use this exact markdown structure and headings in this order:\n"
+            "1) **Executive Summary**: 3-5 sentences (max 180 words)\n"
+            "2) **Key Evidence**: 4-6 bullet points (no fluff)\n"
+            "3) **Actionable Implications**: 3-5 bullet points\n"
+            "4) **Key Data Table**: markdown table with max 6 rows.\n"
+            "Keep evidence dense, avoid repetition, and prefer concrete numbers."
+        )
+    return (
+        " Use this exact markdown structure and headings in this order:\n"
+        "1) **Executive Summary**: 5-10 sentences (max 300 words)\n"
+        "2) **Key Evidence**: 5-10 bullet points\n"
+        "3) **Actionable Implications**: 5-10 bullet points\n"
+        "4) **Key Data Table**: markdown table with max 10 rows.\n"
+        "Use clear evidence and avoid redundant points."
+    )
+
+
+def get_debate_turn_instruction() -> str:
+    """Return instruction that enforces concise, contrastive debate turns."""
+    verbosity = get_report_verbosity()
+    if verbosity == "compact":
+        return (
+            " Turn limit: 120-180 words. Include only new or contrasting arguments, "
+            "explicitly avoid repeating earlier points unless needed for rebuttal."
+        )
+    return (
+        " Turn limit: 150-200 words. Include only new or contrasting arguments, "
+        "explicitly avoid repeating earlier points unless needed for rebuttal."
+    )
+
+
 def build_instrument_context(ticker: str) -> str:
     """Describe the exact instrument so agents preserve exchange-qualified tickers."""
     return (

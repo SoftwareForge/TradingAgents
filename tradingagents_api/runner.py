@@ -30,6 +30,7 @@ def _build_config(payload: dict[str, Any]) -> dict[str, Any]:
     config["max_debate_rounds"] = payload["research_depth"]
     config["max_risk_discuss_rounds"] = payload["research_depth"]
     config["output_language"] = payload["language"]
+    config["report_verbosity"] = payload.get("report_verbosity", "standard")
     config["checkpoint_enabled"] = payload["checkpoint_enabled"]
     config["backend_url"] = payload.get("backend_url")
     return config
@@ -218,5 +219,6 @@ def run_analysis_job(
             "quick_model": payload["quick_model"],
             "research_depth": payload["research_depth"],
             "language": payload["language"],
+            "report_verbosity": payload.get("report_verbosity", "standard"),
         },
     }
